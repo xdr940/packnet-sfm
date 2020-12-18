@@ -25,14 +25,17 @@ def is_image(file, ext=('.png', '.jpg',)):
 
 def parse_args():
     parser = argparse.ArgumentParser(description='PackNet-SfM inference of depth maps from images')
-    parser.add_argument('--checkpoint', type=str, help='Checkpoint (.ckpt)')
-    parser.add_argument('--input', type=str, help='Input file or folder')
-    parser.add_argument('--output', type=str, help='Output file or folder')
+    parser.add_argument('--checkpoint', type=str, help='Checkpoint (.ckpt)',
+                        default='/home/roit/models/packnet/PackNet01_MR_selfsup_K.ckpt')
+    parser.add_argument('--input', type=str, help='Input file or folder',
+                        default='/home/roit/datasets/kitti/2011_09_29/2011_09_29_drive_0004_sync/image_02/data')
+    parser.add_argument('--output', type=str, help='Output file or folder',
+                        default='./2011_09_29_drive_0004_sync_packnet')
     parser.add_argument('--image_shape', type=int, nargs='+', default=None,
                         help='Input and output image shape '
                              '(default: checkpoint\'s config.datasets.augmentation.image_shape)')
     parser.add_argument('--half', action="store_true", help='Use half precision (fp16)')
-    parser.add_argument('--save', type=str, choices=['npz', 'png'], default=None,
+    parser.add_argument('--save', type=str, choices=['npz', 'png'], default='png',
                         help='Save format (npz or png). Default is None (no depth map is saved).')
     args = parser.parse_args()
     assert args.checkpoint.endswith('.ckpt'), \

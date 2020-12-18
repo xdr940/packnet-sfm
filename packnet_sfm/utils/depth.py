@@ -8,6 +8,8 @@ from matplotlib.cm import get_cmap
 from packnet_sfm.utils.image import load_image, gradient_x, gradient_y, flip_lr, interpolate_image
 from packnet_sfm.utils.types import is_seq, is_tensor
 
+#wdl
+import matplotlib.pyplot as plt
 
 def load_depth(file):
     """
@@ -56,8 +58,11 @@ def write_depth(filename, depth, intrinsics=None):
         np.savez_compressed(filename, depth=depth, intrinsics=intrinsics)
     # If we are saving as a .png
     elif filename.endswith('.png'):
-        depth = transforms.ToPILImage()((depth * 256).int())
-        depth.save(filename)
+        #depth = transforms.ToPILImage()((depth * 256).int())
+        #depth.save(filename)
+        #xdr94
+        depth_save = 255/depth.numpy()
+        plt.imsave(filename,depth_save,cmap='plasma')
     # Something is wrong
     else:
         raise NotImplementedError('Depth filename not valid.')

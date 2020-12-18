@@ -13,8 +13,10 @@ from packnet_sfm.utils.horovod import hvd_init
 def parse_args():
     """Parse arguments for training script"""
     parser = argparse.ArgumentParser(description='PackNet-SfM evaluation script')
-    parser.add_argument('--checkpoint', type=str, help='Checkpoint (.ckpt)')
-    parser.add_argument('--config', type=str, default=None, help='Configuration (.yaml)')
+    parser.add_argument('--checkpoint', type=str, help='-',
+                        default='/home/roit/models/packnet/PackNet01_MR_selfsup_K.ckpt')
+    parser.add_argument('--config', type=str, help='Configuration (.yaml)',
+                        default='../configs/eval_kitti.yaml')
     parser.add_argument('--half', action="store_true", help='Use half precision (fp16)')
     args = parser.parse_args()
     assert args.checkpoint.endswith('.ckpt'), \
