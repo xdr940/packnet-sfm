@@ -30,7 +30,7 @@ def parse_args():
     parser.add_argument('--input', type=str, help='Input file or folder',
                         default='/home/roit/datasets/kitti/2011_09_29/2011_09_29_drive_0004_sync/image_02/data')
     parser.add_argument('--output', type=str, help='Output file or folder',
-                        default='./2011_09_29_drive_0004_sync_packnet')
+                        default='/home/roit/bluep2/test_out/packnet/kitti/2011_09_29_drive_0004_sync')
     parser.add_argument('--image_shape', type=int, nargs='+', default=None,
                         help='Input and output image shape '
                              '(default: checkpoint\'s config.datasets.augmentation.image_shape)')

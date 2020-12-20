@@ -401,6 +401,7 @@ def setup_depth_net(config, prepared, **kwargs):
         args={**config, **kwargs},
     )
     if not prepared and config.checkpoint_path is not '':
+        #load weights
         depth_net = load_network(depth_net, config.checkpoint_path,
                                  ['depth_net', 'disp_network'])
     return depth_net
@@ -454,14 +455,20 @@ def setup_model(config, prepared, **kwargs):
         Created model
     """
     print0(pcolor('Model: %s' % config.name, 'yellow'))
-    model = load_class(config.name, paths=['packnet_sfm.models',])(
-        **{**config.loss, **kwargs})
+    #framework
+        #network
+            #arch
+            #weights
+    model = load_class(config.name,
+                       paths=['packnet_sfm.models',])(**{**config.loss, **kwargs})
     # Add depth network if required
     if model.network_requirements['depth_net']:
-        model.add_depth_net(setup_depth_net(config.depth_net, prepared))
+        depth_net = setup_depth_net(config.depth_net, prepared)
+        model.add_depth_net(depth_net)
     # Add pose network if required
     if model.network_requirements['pose_net']:
-        model.add_pose_net(setup_pose_net(config.pose_net, prepared))
+        pose_net = setup_pose_net(config.pose_net, prepared)
+        model.add_pose_net(pose_net)
     # If a checkpoint is provided, load pretrained model
     if not prepared and config.checkpoint_path is not '':
         model = load_network(model, config.checkpoint_path, 'model')

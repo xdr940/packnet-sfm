@@ -107,3 +107,5 @@ venv.bak/
 #xdr94
 .idea
 *.npz
+docs
+media

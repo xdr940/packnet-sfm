@@ -108,7 +108,15 @@ def load_class(filename, paths, concat=True):
 def load_class_args_create(filename, paths, args={}, concat=True):
     """Loads a class (filename) and returns an instance with filtered arguments (args)"""
     class_type = load_class(filename, paths, concat)
-    return filter_args_create(class_type, args)
+    arch = filter_args_create(class_type, args)
+    # arch = filter_args_create(func=load_class(filename = 'PackNet01',
+    #                                           paths = 'packnet_sfm.networks.depth',
+    #                                           concat=True),
+    #                           keys = {'name':'PackNet01',
+    #                                   'checkpoint_path':'',
+    #                                   'version':'1A',
+    #                                   'dropout':0.0})
+    return arch
 
 
 def load_network(network, path, prefixes=''):

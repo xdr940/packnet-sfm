@@ -1,0 +1,3 @@
+model_wrapper:ModelWrapper:prepare_model:setup_model:
+	load:load_class
+	SfmModel:
