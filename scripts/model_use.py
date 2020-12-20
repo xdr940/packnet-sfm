@@ -1,17 +1,9 @@
 import torch
 from packnet_sfm.networks import packnet
+from packnet_sfm.networks.layers import InvDepth
 import matplotlib.pyplot as plt
 
 import cv2
-
-def same_shape(shape1, shape2):
-
-    if len(shape1) != len(shape2):
-        return False
-    for i in range(len(shape1)):
-        if shape1[i] != shape2[i]:
-            return False
-    return True
 
 def main1():
     def onnx_out():
@@ -65,9 +57,10 @@ def main1():
     img = img.unsqueeze(dim=0)
 
     disp = arch(img)
-    disp = disp.detach().cpu().numpy()[0][0]
+    depth = 1. / disp.clamp(min=1e-6)
 
-    plt.imshow(disp,cmap='plasma')
+    depth = depth.detach().cpu().numpy()[0][0]
+    plt.imshow(depth,cmap='plasma')
     plt.show()
 
 

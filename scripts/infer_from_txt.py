@@ -10,17 +10,21 @@ import torch
 from cv2 import imwrite
 from tqdm import tqdm
 from path import Path
+import cv2
+import matplotlib.pyplot as plt
 
-from packnet_sfm.models.model_wrapper import ModelWrapper
-from packnet_sfm.datasets.augmentations import resize_image, to_tensor
-from packnet_sfm.utils.horovod import hvd_init, rank, world_size, print0
-from packnet_sfm.utils.image import load_image
-from packnet_sfm.utils.config import parse_test_file
-from packnet_sfm.utils.load import set_debug
-from packnet_sfm.utils.depth import write_depth, inv2depth, viz_inv_depth
-from packnet_sfm.utils.logging import pcolor
+#
+# from packnet_sfm.models.model_wrapper import ModelWrapper
+# from packnet_sfm.datasets.augmentations import resize_image, to_tensor
+# from packnet_sfm.utils.horovod import hvd_init, rank, world_size, print0
+# from packnet_sfm.utils.image import load_image
+# from packnet_sfm.utils.config import parse_test_file
+# from packnet_sfm.utils.load import set_debug
+# from packnet_sfm.utils.depth import write_depth, inv2depth, viz_inv_depth
+# from packnet_sfm.utils.logging import pcolor
 
 #xdr940
+from packnet_sfm.networks import packnet
 from thrdparty.utils.fio import split2files
 
 def is_image(file, ext=('.png', '.jpg',)):
@@ -58,105 +62,46 @@ def parse_args():
     return args
 
 
-@torch.no_grad()
-def infer_and_save_depth(input_file, out_dir, model_wrapper, image_shape, half, save,dataset):
-    """
-    Process a single input file to produce and save visualization
-
-    Parameters
-    ----------
-    input_file : str
-        Image file
-    output_file : str
-        Output file, or folder where the output will be saved
-    model_wrapper : nn.Module
-        Model wrapper used for inference
-    image_shape : Image shape
-        Input image shape
-    half: bool
-        use half precision (fp16)
-    save: str
-        Save format (npz or png)
-    """
-    basename=''
-    if dataset=='kitti':
-        input_file = Path(input_file)
-        frame = input_file.stem
-        sence = input_file.split('/')[-4]
-        basename = sence+'_'+frame+'.{}'.format(save)
-
-
-
-    # change to half precision for evaluation if requested
-    dtype = torch.float16 if half else None
-
-    # Load image
-    image = load_image(input_file)
-    # Resize and to tensor
-    image = resize_image(image, image_shape)
-    image = to_tensor(image).unsqueeze(0)
-
-    #rgba 2 rgb
-    image = image[:,:3,:,:]
-
-    # Send image to GPU if available
-    if torch.cuda.is_available():
-        image = image.to('cuda:{}'.format(rank()), dtype=dtype)
-
-    # Depth inference (returns predicted inverse depth)
-    pred_inv_depth = model_wrapper.depth(image)[0]
-
-
-
-    if save == 'npz' or save == 'png':
-        # Get depth from predicted depth map and save to different formats
-        out_dir=Path(out_dir)
-
-        write_depth(out_dir/basename, depth=inv2depth(pred_inv_depth))
-
-
 def main(args):
 
-    # Initialize horovod
-    hvd_init()
+    dataset='kitti'
+    save = 'png'
+    arch = packnet.PackNet01(version='1A', dropout=0.0)
+    arch.eval()
+    arch.to('cuda')
 
-    # Parse arguments
-    config, state_dict = parse_test_file(args.checkpoint)
+    loaded_dict = torch.load('/home/roit/models/packnet/PackNet01_MR_selfsup_K.pth', map_location='cuda')
+    arch.load_state_dict(loaded_dict)
 
-    # If no image shape is provided, use the checkpoint one
-    image_shape = args.image_shape
-    if image_shape is None:
-        image_shape = config.datasets.augmentation.image_shape
 
-    # Set debug if requested
-    set_debug(config.debug)
-
-    # Initialize model wrapper from checkpoint arguments
-    model_wrapper = ModelWrapper(config, load_datasets=False)
-    # Restore monodepth_model state
-    model_wrapper.load_state_dict(state_dict)
-
-    # change to half precision for evaluation if requested
-    dtype = torch.float16 if args.half else None
-
-    # Send model to GPU if available
-    if torch.cuda.is_available():
-        model_wrapper = model_wrapper.to('cuda:{}'.format(rank()), dtype=dtype)
-
-    # Set to eval mode
-    model_wrapper.eval()
 
 
     #prepare input files
     files = split2files(data_path=args.data_path,split_txt=args.input)
     files.sort()
-    print0('Found {} files'.format(len(files)))
+    print('-> Found {} files'.format(len(files)))
     print('-> save at {}'.format(args.output))
     out_dir = Path(args.output)
     out_dir.mkdir_p()
     # Process each file
     for fn in tqdm(files):
-        infer_and_save_depth(fn, out_dir, model_wrapper, image_shape, args.half, args.save,'kitti')
+        img_np = cv2.imread(fn)
+        img_np = cv2.resize(img_np, (640, 192))
+        img_np = img_np.transpose([2, 0, 1])
+        img = torch.tensor(img_np).to('cuda', dtype=torch.float32)
+        img = img.unsqueeze(dim=0)
+
+        disp = arch(img)
+        disp = disp.detach().cpu().numpy()[0][0]
+
+        if dataset == 'kitti':
+            input_file = Path(fn)
+            frame = input_file.stem
+            sence = input_file.split('/')[-4]
+            basename = sence + '_' + frame + '.{}'.format(save)
+
+        plt.imsave(out_dir/basename,disp)
+
 
 
 if __name__ == '__main__':
